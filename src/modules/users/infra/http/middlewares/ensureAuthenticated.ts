@@ -26,11 +26,11 @@ export default function ensureAuthentication(
     // Bearer token
     const [, token] = authHeader.split(' ');
 
-    const { subject } = authConfig.jwt;
+    const { secret } = authConfig.jwt;
 
     try {
         // as Força um tipo de variável
-        const { sub } = verify(token, subject) as ITokenPayload;
+        const { sub } = verify(token, secret) as ITokenPayload;
 
         request.user = { id: sub };
 
