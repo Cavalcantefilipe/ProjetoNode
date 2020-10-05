@@ -1,43 +1,42 @@
-import FakeUsersRepository from '@modules/users/repositories/fakes/FakeUsersRepository';
+import FakeCacheProvider from '@shared/container/providers/CacheProvider/fakes/FakeCacheProvider';
 import FakeAppointmentsRepository from '../repositories/fakes/FakeAppointmentsRepository';
 import ListProviderAppointmentsService from './ListProviderAppointmentsService';
 
-let fakeUsersRepository: FakeUsersRepository;
 let fakeAppointmentsRepository: FakeAppointmentsRepository;
+let fakeCacheProvider: FakeCacheProvider;
 let listProviderAppointments: ListProviderAppointmentsService;
 
 describe('ListProviderAppointments', () => {
-  beforeEach(() => {
-    fakeAppointmentsRepository = new FakeAppointmentsRepository();
-    fakeUsersRepository = new FakeUsersRepository();
-    listProviderAppointments = new ListProviderAppointmentsService(
-      fakeAppointmentsRepository,
-    );
-  });
+    beforeEach(() => {
+        fakeAppointmentsRepository = new FakeAppointmentsRepository();
+        fakeCacheProvider = new FakeCacheProvider();
 
-  it('should be able to list the appointments on a specific day', async () => {
-    const appointment1 = await fakeAppointmentsRepository.create({
-      provider_id: 'provider',
-      user_id: 'user',
-      date: new Date(2020, 4, 20, 14, 0, 0),
-    });
-    const appointment2 = await fakeAppointmentsRepository.create({
-      provider_id: 'provider',
-      user_id: 'user',
-      date: new Date(2020, 4, 20, 15, 0, 0),
+        listProviderAppointments = new ListProviderAppointmentsService(
+            fakeAppointmentsRepository,
+            fakeCacheProvider,
+        );
     });
 
-    jest.spyOn(Date, 'now').mockImplementationOnce(() => {
-      return new Date(2020, 4, 20, 11).getTime();
-    });
+    it('should be able to list the appointments on a specific day', async () => {
+        const firstAppointment = await fakeAppointmentsRepository.create({
+            provider_id: 'provider',
+            user_id: 'user',
+            date: new Date(2020, 4, 20, 14, 0, 0),
+        });
 
-    const availability = await listProviderAppointments.execute({
-      provider_id: 'provider',
-      day: 20,
-      year: 2020,
-      month: 5,
-    });
+        const secondAppointment = await fakeAppointmentsRepository.create({
+            provider_id: 'provider',
+            user_id: 'user',
+            date: new Date(2020, 4, 20, 15, 0, 0),
+        });
 
-    expect(availability).toEqual([appointment1, appointment2]);
-  });
+        const appointments = await listProviderAppointments.execute({
+            provider_id: 'provider',
+            year: 2020,
+            month: 5,
+            day: 20,
+        });
+
+        expect(appointments).toEqual([firstAppointment, secondAppointment]);
+    });
 });

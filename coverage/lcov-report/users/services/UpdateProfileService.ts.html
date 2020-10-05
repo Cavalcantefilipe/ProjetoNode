@@ -127,9 +127,13 @@
 <a name='L68'></a><a href='#L68'>68</a>
 <a name='L69'></a><a href='#L69'>69</a>
 <a name='L70'></a><a href='#L70'>70</a>
-<a name='L71'></a><a href='#L71'>71</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -167,9 +171,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -195,78 +202,80 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/* eslint-disable camelcase */
-import { injectable, inject } from 'tsyringe';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { injectable, inject } from 'tsyringe';
+&nbsp;
 import AppError from '@shared/errors/AppError';
-import User from '../infra/typeorm/entities/User';
-import IUsersRepository from '../repositories/IUsersRepository';
+&nbsp;
+import User from '@modules/users/infra/typeorm/entities/User';
 import IHashProvider from '../providers/HashProvider/models/IHashProvider';
+import IUserRepository from '../repositories/IUsersRepository';
 &nbsp;
 interface IRequest {
-  user_id: string;
-  name: string;
-  email: string;
-  old_password?: string;
-  password?: string;
+    user_id: string;
+    name: string;
+    email: string;
+    old_password?: string;
+    password?: string;
 }
 &nbsp;
 @injectable()
-class UpdateProfile {
-  constructor(
-    @inject('UsersRepository')
-    private usersRepository: IUsersRepository,
+class UpdateProfileService {
+    constructor(
+        @inject('UsersRepository')
+        private usersRepository: IUserRepository,
 &nbsp;
-    @inject('HashProvider')
-    private hashProvider: IHashProvider,
-  ) {}
+        @inject('HashProvider')
+        private hashProvider: IHashProvider,
+    ) {}
 &nbsp;
-  public async execute({
-    user_id,
-    name,
-    email,
-    password,
-    old_password,
-  }: IRequest): Promise&lt;User&gt; {
-    const user = await this.usersRepository.findById(user_id);
-&nbsp;
-    if (!user) {
-      throw new AppError('User not found');
-    }
-&nbsp;
-    const userWithUpdatedEmail = await this.usersRepository.findByEmail(email);
-&nbsp;
-    if (userWithUpdatedEmail &amp;&amp; userWithUpdatedEmail.id !== user_id) {
-      throw new AppError('E-mail already in use.');
-    }
-    user.name = name;
-    user.email = email;
-&nbsp;
-    if (password &amp;&amp; !old_password) {
-      throw new AppError(
-        'You need to inform the old password to set a new password',
-      );
-    }
-&nbsp;
-    if (password &amp;&amp; old_password) {
-      const checkOldPassword = await this.hashProvider.compareHash(
+    public async execute({
+        user_id,
+        name,
+        email,
+        password,
         old_password,
-        user.password,
-      );
+    }: IRequest): Promise&lt;User&gt; {
+        const user = await this.usersRepository.findById(user_id);
 &nbsp;
-      if (!checkOldPassword) {
-        throw new AppError('Old Password is not correct');
-      }
+        if (!user) {
+            throw new AppError('User not found');
+        }
 &nbsp;
-      user.password = await this.hashProvider.generateHash(password);
+        const userWithUpdatedEmail = await this.usersRepository.findByEmail(
+            email,
+        );
+&nbsp;
+        if (userWithUpdatedEmail &amp;&amp; userWithUpdatedEmail.id !== user_id) {
+            throw new AppError('Email already in use');
+        }
+&nbsp;
+        user.name = name;
+        user.email = email;
+&nbsp;
+        if (password &amp;&amp; !old_password) {
+            throw new AppError(
+                'You need to inform the old password to set a new password',
+            );
+        }
+&nbsp;
+        if (password &amp;&amp; old_password) {
+            const checkOldPassword = await this.hashProvider.compareHash(
+                old_password,
+                user.password,
+            );
+&nbsp;
+            if (!checkOldPassword) {
+                throw new AppError('Old password does not match.');
+            }
+&nbsp;
+            user.password = await this.hashProvider.generateHash(password);
+        }
+&nbsp;
+        return this.usersRepository.save(user);
     }
-&nbsp;
-    return this.usersRepository.save(user);
-  }
 }
-&nbsp;
-export default UpdateProfile;
+export default UpdateProfileService;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -274,7 +283,7 @@ export default UpdateProfile;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank">istanbul</a>
-                at Mon Oct 05 2020 02:07:54 GMT-0300 (Brasilia Standard Time)
+                at Mon Oct 05 2020 17:18:36 GMT-0300 (Brasilia Standard Time)
             </div>
         </div>
         <script src="../../prettify.js"></script>

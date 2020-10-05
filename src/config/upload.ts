@@ -1,20 +1,47 @@
-import multer from 'multer';
 import path from 'path';
 import crypto from 'crypto';
+import multer, { StorageEngine } from 'multer';
 
-const tmpFolder = path.resolve(__dirname, '..', '..', 'tmp');
+const tempFolder = path.resolve(__dirname, '..', '..', 'temp');
+
+interface IUploadConfig {
+    driver: 's3' | 'disk';
+
+    tempFolder: string;
+    uploadsFolder: string;
+
+    multer: {
+        storage: StorageEngine;
+    };
+
+    config: {
+        aws: {
+            bucket: string;
+        };
+    };
+}
 
 export default {
-  tmpFolder,
-  uploadsFolder: path.resolve(tmpFolder, 'uploads'),
+    driver: process.env.STORAGE_DRIVER,
 
-  storage: multer.diskStorage({
-    destination: tmpFolder,
-    filename: (request, file, callback) => {
-      const fileHash = crypto.randomBytes(10).toString('hex');
-      const filename = `${fileHash}-${file.originalname}`;
+    tempFolder,
+    uploadsFolder: path.resolve(tempFolder, 'uploads'),
 
-      return callback(null, filename);
+    multer: {
+        storage: multer.diskStorage({
+            destination: tempFolder,
+            filename(_request, file, callback) {
+                const fileHash = crypto.randomBytes(10).toString('hex');
+                const filename = `${fileHash}-${file.originalname}`;
+
+                return callback(null, filename);
+            },
+        }),
     },
-  }),
-};
+
+    config: {
+        aws: {
+            bucket: 'app-gobarber-2',
+        },
+    },
+} as IUploadConfig;
